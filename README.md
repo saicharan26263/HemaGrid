@@ -1,9 +1,10 @@
 # HemaGrid 🩸
-### Autonomous Inter-Hospital Emergency Blood Mutual-Aid Grid
-**A Real-Time Geospatial Infrastructure for Acute Transfusion Logistics & Mass-Casualty Preparedness**
+### Enterprise Inter-Hospital Emergency Blood Mutual-Aid Grid
+**A Mission-Critical Managed Cloud Infrastructure for Acute Transfusion Logistics & Mass-Casualty Preparedness**
 
+[![Proprietary Commercial Platform](https://img.shields.io/badge/Platform-Proprietary_Enterprise_SaaS-navy.svg)](#intellectual-property--commercial-governance)
 [![National Facility Census](https://img.shields.io/badge/Facilities_Integrated-7%2C634_US_Hospitals-crimson.svg)](#nationwide-facility-census)
-[![Clinical Transfusion Matrix](https://img.shields.io/badge/Compatibility_Engine-27_Valid_%7C_37_Blocked-blue.svg)](#clinical-compatibility-engine)
+[![Clinical Transfusion Matrix](https://img.shields.io/badge/Compatibility_Engine-27_Valid_%7C_37_Blocked-blue.svg)](#clinical-transfusion-compatibility-engine)
 [![SLA Enforcement](https://img.shields.io/badge/Response_SLA-%3C15m_Critical-emerald.svg)](#service-level-agreements--accountability-trail)
 [![Spatial Telemetry](https://img.shields.io/badge/Geospatial-PostGIS_3.6_Geodesic-darkgreen.svg)](#geospatial-engine--multi-tier-routing)
 [![Regulatory Standards](https://img.shields.io/badge/Compliance-AABB_%7C_FDA_21_CFR_%7C_HIPAA-purple.svg)](#regulatory-alignment--data-governance)
@@ -14,7 +15,7 @@
 
 In acute hemorrhagic shock and trauma resuscitation, the **"Golden Hour"** dictates patient survival. While regional blood banks maintain static inventories, inter-hospital blood transfers during trauma surges or acute localized shortages historically rely on **manual telephone calls, static spreadsheets, and courier guesswork**. A single trauma patient requiring 6–10 units of $O^-$ or $O^+$ can exhaust a Level II/III trauma center's vault in minutes, triggering a 45-to-90 minute delay while on-call staff frantically call nearby facilities to locate compatible blood.
 
-**HemaGrid** is an autonomous, high-availability mutual-aid infrastructure designed to federate all **7,634 accredited hospitals and blood distribution centers** across all 50 U.S. states and territories into an active, self-balancing telemetry grid.
+**HemaGrid** is an autonomous, high-availability mutual-aid infrastructure operated as a **fully managed commercial service**. It federates all **7,634 accredited hospitals and blood distribution centers** across all 50 U.S. states and territories into an active, self-balancing telemetry grid.
 
 ### Key Mission Capabilities:
 - **Instantaneous Spatial Discovery**: Evaluates real-time blood vault balances within sub-second PostGIS geodesic queries.
@@ -29,22 +30,22 @@ In acute hemorrhagic shock and trauma resuscitation, the **"Golden Hour"** dicta
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["Edge & Hospital Terminals (Port 5173)"]
-        UI["React 19 + TypeScript + Tailwind CSS"]
+    subgraph ClientLayer["Edge & Hospital Terminals (Hospital Intranets)"]
+        UI["Secure Web Portal & Tactical Tablet UI"]
         LeafletGIS["Leaflet GIS (Dynamic Viewport Slicing)"]
         SocketClient["Socket.io Client (Real-time Telemetry)"]
     end
 
-    subgraph APILayer["Application & Routing Engine (Port 4000)"]
-        Express["Express API Gateway + Helmet + Rate Limiter"]
+    subgraph APILayer["HemaGrid Managed Cloud & Routing Engine"]
+        Express["Enterprise API Gateway + WAF + Rate Limiter"]
         AuthMiddleware["JWT Authentication + Hospital Scope Guard"]
         SpatialMatcher["PostGIS Geodesic Matcher & Transfusion Scorer"]
         EscalationEngine["Sequential Dispatcher & Auto-Reroute Engine"]
         SweeperCron["15-Second SLA Sweeper & Timeout Monitor"]
-        SocketGateway["Socket.io Hospital Room Broadcast Gateway"]
+        SocketGateway["Hospital Room Broadcast Gateway"]
     end
 
-    subgraph DataLayer["Persistence & Spatial Store (PostgreSQL 18 + PostGIS 3.6)"]
+    subgraph DataLayer["Fault-Tolerant Spatial Datastore"]
         FacilitiesTbl[("facilities (7,634 US Hospitals & Coordinates)")]
         InventoryTbl[("inventory (61,072 Blood Vault Records)")]
         RequestsTbl[("requests (Trauma Incidents & Hard Deadlines)")]
@@ -52,7 +53,7 @@ flowchart TD
         AuditTbl[("escalation_events (Immutable SLA Audit Log)")]
     end
 
-    ClientLayer -->|HTTPS REST & WSS Telemetry| APILayer
+    ClientLayer -->|Encrypted HTTPS REST & WSS Telemetry| APILayer
     SpatialMatcher <-->|ST_DWithin & ST_Distance| FacilitiesTbl
     SpatialMatcher <-->|Compatible Units & Expiry| InventoryTbl
     EscalationEngine <-->|Atomic FOR UPDATE Deductions| MatchesTbl
@@ -119,16 +120,9 @@ Emergency medicine demands institutional accountability:
 
 ### 6. Atomic Vault Dispensing & Concurrency Control
 To prevent phantom reserves and double-allocation race conditions across simultaneous mass-casualty requests:
-```sql
--- Executed inside an isolated PostgreSQL transaction
-SELECT units FROM inventory 
-WHERE facility_id = $provider_id AND blood_type = $type 
-FOR UPDATE;
-
-UPDATE inventory 
-SET units = units - $requested_units, updated_at = NOW() 
-WHERE facility_id = $provider_id AND blood_type = $type;
-```
+- Isolated PostgreSQL transactions utilize pessimistic row locking (`SELECT FOR UPDATE`).
+- Inventory units decrement atomically at acceptance (`units = GREATEST(units - requested_units, 0)`).
+- Zero risk of multiple trauma centers claiming the same physical units of blood.
 
 ---
 
@@ -143,83 +137,25 @@ WHERE facility_id = $provider_id AND blood_type = $type;
 
 ---
 
-## 🚀 Deployment & Operational Runbook
+## 💼 Enterprise Service Model & Managed Delivery
 
-### Network Endpoints & Topology
-The system binds to `0.0.0.0`, enabling multi-device interoperability across hospital intranets and secure government VPNs:
+HemaGrid is delivered to healthcare systems, state hospital associations, and federal emergency preparedness agencies as a **fully managed, turnkey software-as-a-service (SaaS) and private cloud infrastructure**.
 
-| Service | Port | Localhost URI | Network URI (LAN / Wi-Fi) |
-| :--- | :--- | :--- | :--- |
-| **Web Dashboard** | `5173` | `http://localhost:5173` | `http://10.0.0.80:5173` |
-| **REST & WebSocket API** | `4000` | `http://localhost:4000` | `http://10.0.0.80:4000` |
-| **PostgreSQL / PostGIS** | `5432` | `localhost:5432` | Internal Secured Socket |
-
-### Starting the Platform
-```bash
-# Clone the repository
-git clone https://github.com/saicharan26263/HemaGrid.git
-cd HemaGrid
-
-# Install dependencies across all monorepo workspaces
-npm install
-
-# Build shared types and contracts
-npm run --workspace=@bloodbanc/shared build
-
-# Start the Backend API & Socket Server (Port 4000)
-npm run --workspace=server dev
-
-# Start the Client Dashboard (Port 5173)
-npm run --workspace=client dev
-```
-
-### Database Management & Diagnostics
-```bash
-# Seed or reset the 7,634 US hospital census & inventory vaults:
-npm run --workspace=server seed
-
-# Run automated end-to-end verification (Census, Auth, Spatial Distance, Dispensing):
-npx tsx server/src/scripts/verify_dispensing.ts
-```
+### Zero Infrastructure Burden on Participating Facilities
+- **Fully Managed Cloud**: HemaGrid Operations manages 100% of the server infrastructure, database clustering, PostGIS indexing, network security, and high-availability failover.
+- **Zero Local Footprint**: Participating hospitals and trauma centers require **no local server installations, no software maintenance, and no database upkeep**.
+- **Instant Browser & Mobile Onboarding**: Emergency department staff and blood bank coordinators access the network via secure, pre-authenticated clinical portals compatible with hospital workstations, mobile tablets, and trauma bay terminals.
+- **24/7/365 Mission-Critical Operations Center**: Continuous automated monitoring, SLA escalation tracking, and 99.99% uptime availability backed by enterprise service level agreements.
+- **Custom EMR / LIS Integrations**: Turnkey data bridge support for hospital Laboratory Information Systems (Epic Beaker, Cerner Millennium, Sunquest) to maintain automated inventory synchronization.
 
 ---
 
-## 🗺️ Project Directory Structure
+## 🛡️ Intellectual Property & Commercial Governance
 
-```
-HemaGrid/
-├── client/                     # High-Performance React 19 Frontend
-│   ├── src/
-│   │   ├── components/
-│   │   │   └── HospitalMap.tsx # Leaflet GIS map with viewport marker clustering
-│   │   ├── App.tsx             # Dispatch dashboard, queue & vault manager
-│   │   └── main.tsx            # Application entry & dynamic socket resolution
-│   └── vite.config.ts          # Multi-host binding & reverse proxy rules
-├── server/                     # Mission-Critical Node.js / Express Backend
-│   ├── src/
-│   │   ├── db/
-│   │   │   ├── schema.sql      # PostGIS schema, spatial GIST indexes & triggers
-│   │   │   ├── seed.ts         # Fast bulk-seeder for national hospital census
-│   │   │   └── us_hospitals.csv# Official HIFLD / CMS hospital registry
-│   │   ├── matching/
-│   │   │   ├── matcher.ts      # PostGIS geodesic candidate discovery query
-│   │   │   └── escalation.ts   # Multi-tier radius expansion & 1-by-1 dispatcher
-│   │   ├── services/
-│   │   │   └── requestService.ts# Core transactional workflow & failover engine
-│   │   ├── routes/
-│   │   │   ├── api.ts          # REST endpoints for inventory, requests & audit
-│   │   │   └── auth.ts         # JWT credentials and facility authentication
-│   │   └── index.ts            # HTTP & Socket.io server entry point
-├── shared/                     # Shared Clinical Domain Contracts
-│   └── src/
-│       ├── types.ts            # Strong TypeScript interfaces
-│       └── compatibility.ts    # Transfusion rules & clinical scoring matrix
-└── package.json                # Monorepo workspaces configuration
-```
+**Product**: HemaGrid™ Inter-Hospital Transfusion Grid  
+**Copyright**: © 2026 HemaGrid, Inc. All rights reserved.  
+**Classification**: Proprietary Commercial Healthcare Technology.  
+**Notice**: This software, including its proprietary matching algorithms, spatial routing architectures, and user interfaces, is the proprietary property of HemaGrid, Inc. Unauthorized copying, distribution, decompilation, or reverse engineering is strictly prohibited.  
 
----
-
-## 📜 Intellectual Property & Classification
-**Classification**: High-Priority Healthcare Logistics & Disaster Preparedness Technology.  
-**Repository**: [https://github.com/saicharan26263/HemaGrid](https://github.com/saicharan26263/HemaGrid)  
-**Lead Architect**: Sai Charan Annam (`saicharan26263`)  
+For enterprise licensing, state-level pilot deployments, or federal partnerships, contact:  
+📧 **inquiries@hemagrid.com** | **Sai Charan Annam, Founder & Chief Architect**
