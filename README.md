@@ -2,7 +2,7 @@
 ### Enterprise Inter-Hospital Emergency Blood Mutual-Aid Grid
 **A Mission-Critical Managed Cloud Infrastructure for Acute Transfusion Logistics & Mass-Casualty Preparedness**
 
-[![Proprietary Commercial Platform](https://img.shields.io/badge/Platform-Proprietary_Enterprise_SaaS-navy.svg)](#intellectual-property--commercial-governance)
+[![Enterprise Infrastructure](https://img.shields.io/badge/Platform-Enterprise_Mutual--Aid_Grid-navy.svg)](#-government-partnership--public-health-deployment-framework)
 [![National Facility Census](https://img.shields.io/badge/Facilities_Integrated-7%2C634_US_Hospitals-crimson.svg)](#nationwide-facility-census)
 [![Clinical Transfusion Matrix](https://img.shields.io/badge/Compatibility_Engine-27_Valid_%7C_37_Blocked-blue.svg)](#clinical-transfusion-compatibility-engine)
 [![SLA Enforcement](https://img.shields.io/badge/Response_SLA-%3C15m_Critical-emerald.svg)](#service-level-agreements--accountability-trail)
@@ -150,12 +150,31 @@ HemaGrid is delivered to healthcare systems, state hospital associations, and fe
 
 ---
 
-## 🛡️ Intellectual Property & Commercial Governance
+## 🏛️ Government Partnership & Public Health Deployment Framework
 
-**Product**: HemaGrid™ Inter-Hospital Transfusion Grid  
-**Copyright**: © 2026 HemaGrid, Inc. All rights reserved.  
-**Classification**: Proprietary Commercial Healthcare Technology.  
-**Notice**: This software, including its proprietary matching algorithms, spatial routing architectures, and user interfaces, is the proprietary property of HemaGrid, Inc. Unauthorized copying, distribution, decompilation, or reverse engineering is strictly prohibited.  
+HemaGrid is architected to integrate directly into state and federal emergency preparedness architecture, disaster response compacts, and trauma quality programs:
 
-For enterprise licensing, state-level pilot deployments, or federal partnerships, contact:  
-📧 **inquiries@hemagrid.com** | **Sai Charan Annam, Founder & Chief Architect**
+### 1. Federal Grant & Funding Alignment
+Designed to qualify under major statutory preparedness authorities:
+- **ASPR Hospital Preparedness Program (HPP)**: Direct alignment with Healthcare Coalition (HCC) regional surge capacity and mutual-aid compact requirements.
+- **FEMA Homeland Security Grant Program (HSGP)**: Enhances State Homeland Security Program (SHSP) core capabilities for mass-casualty and catastrophic incident medical logistics.
+- **CDC Public Health Emergency Preparedness (PHEP)**: Real-time situational awareness for emergency countermeasure and medical materiel distribution.
+
+### 2. Emergency Support Function 8 (ESF-8) & ICS Integration
+- **Incident Command System (ICS)**: Compatible with FEMA NIMS command structures. During declared public health emergencies, regional disaster coordinators gain real-time situational telemetry of blood reserves across all jurisdictional facilities.
+- **Mass-Casualty Incident (MCI) Triage**: Automated protocol elevates local transfer requests into multi-facility regional surge draws when active disaster declarations are logged.
+- **Cross-Jurisdictional Mutual Aid**: Facilitates seamless interstate blood coordination under Emergency Management Assistance Compact (EMAC) frameworks.
+
+### 3. Phased Government Pilot Roadmap
+- **Phase 1 (Regional Trauma Demonstration — 90 Days)**: Deploy active mutual-aid grid across 10–25 Level I and Level II trauma centers in a high-density metropolitan corridor (e.g., NY Metro or Southern California).
+- **Phase 2 (Statewide Coalition Expansion — 180 Days)**: Integrate critical access hospitals and regional blood centers statewide, linking with State Trauma Advisory Councils.
+- **Phase 3 (National Defense & Disaster Grid — Year 1)**: Interconnect state grids with federal strategic reserves, military medical centers, and national blood supplier networks.
+
+---
+
+## 🎖️ Program Leadership & Technical Inquiry
+
+- **Lead Architect & Program Director**: Sai Charan Annam ([@saicharan26263](https://github.com/saicharan26263))
+- **Program Repository**: [https://github.com/saicharan26263/HemaGrid](https://github.com/saicharan26263/HemaGrid)
+- **Deployment Inquiries**: Open an issue or inquiry directly via the [HemaGrid Official Repository](https://github.com/saicharan26263/HemaGrid).
+
