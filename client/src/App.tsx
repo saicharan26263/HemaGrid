@@ -8,6 +8,19 @@ import {
   type InventoryItem,
 } from '@bloodbanc/shared';
 import { HospitalMap } from './components/HospitalMap';
+import {
+  BloodDropIcon,
+  PulseIcon,
+  AlertBeaconIcon,
+  HospitalIcon,
+  PhoneIcon,
+  TruckIcon,
+  ShieldCheckIcon,
+  SendIcon,
+  CheckCircleIcon,
+  AlertTriangleIcon,
+  RefreshIcon,
+} from './components/Icons';
 
 const API = import.meta.env.VITE_API_URL || '/api';
 
@@ -484,8 +497,8 @@ export default function App({ socket }: { socket: Socket }) {
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4">
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-red-600 flex items-center justify-center text-2xl">
-              🩸
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center text-white shadow-lg shadow-red-950/50">
+              <BloodDropIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">HemaGrid</h1>
@@ -562,8 +575,8 @@ export default function App({ socket }: { socket: Socket }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("dashboard")}>
-              <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center">
-                <span className="text-xl">🩸</span>
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shadow-md shadow-red-950/50">
+                <BloodDropIcon className="w-5 h-5 text-white" />
               </div>
               <div>
                 <span className="text-lg font-bold text-white tracking-tight">HemaGrid</span>
@@ -582,9 +595,9 @@ export default function App({ socket }: { socket: Socket }) {
               </button>
               <button
                 onClick={() => setActiveTab("map")}
-                className={"px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 " + (activeTab === "map" ? "bg-red-600 text-white" : "text-slate-400 hover:text-slate-200")}
+                className={"px-3 py-1.5 rounded-lg text-xs font-semibold " + (activeTab === "map" ? "bg-red-600 text-white" : "text-slate-400 hover:text-slate-200")}
               >
-                <span>🗺️</span> Hospital & Stock Map
+                Hospital & Stock Map
               </button>
               <button
                 onClick={() => setActiveTab("requests")}
@@ -688,7 +701,8 @@ export default function App({ socket }: { socket: Socket }) {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <span className="text-red-500">⚡</span> Raise Emergency Blood Request
+                    <PulseIcon className="w-5 h-5 text-red-400" />
+                    <span>Raise Emergency Blood Request</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
                     Multi-tier automated geo-routing engine. Escalates outward every 120s if unanswered (1hr hard cap).
@@ -712,7 +726,10 @@ export default function App({ socket }: { socket: Socket }) {
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>🚨</span> Immediate Action Queue
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-red-500/15 border border-red-500/30 text-red-400">
+                      <AlertBeaconIcon className="w-3.5 h-3.5" />
+                    </span>
+                    <span>Immediate Action Queue</span>
                   </h3>
                   <button
                     onClick={() => setActiveTab("requests")}
@@ -747,7 +764,10 @@ export default function App({ socket }: { socket: Socket }) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>🩸</span> Vault Stock ({totalUnitsInFacility}u)
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                      <BloodDropIcon className="w-3.5 h-3.5" />
+                    </span>
+                    <span>Vault Stock ({totalUnitsInFacility}u)</span>
                   </h3>
                   <button
                     onClick={() => setActiveTab("inventory")}
@@ -784,8 +804,9 @@ export default function App({ socket }: { socket: Socket }) {
                 </div>
 
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-2">
-                  <div className="font-semibold text-slate-200 flex items-center gap-1.5">
-                    <span>🛡️</span> Zero-Patient PII Guarantee
+                  <div className="font-semibold text-slate-200 flex items-center gap-2">
+                    <ShieldCheckIcon className="w-4 h-4 text-emerald-400" />
+                    <span>Zero-Patient PII Guarantee</span>
                   </div>
                   <p>
                     All requests specify blood type, required units, and expiry parameters only. No patient identity is ever transmitted or stored.
@@ -820,9 +841,10 @@ export default function App({ socket }: { socket: Socket }) {
               </div>
               <button
                 onClick={() => loadData(token)}
-                className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-lg font-semibold"
+                className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5"
               >
-                🔄 Refresh Live Status
+                <RefreshIcon className="w-3.5 h-3.5 text-slate-300" />
+                <span>Refresh Live Status</span>
               </button>
             </div>
 
@@ -935,7 +957,10 @@ export default function App({ socket }: { socket: Socket }) {
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs gap-2">
-                    <span className="text-slate-400">📞 {f.phone}</span>
+                    <span className="text-slate-400 flex items-center gap-1.5">
+                      <PhoneIcon className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{f.phone}</span>
+                    </span>
                     <div className="flex items-center gap-1.5">
                       {f.id !== user.facilityId && (
                         <button
@@ -945,9 +970,10 @@ export default function App({ socket }: { socket: Socket }) {
                             setActiveTab('dashboard');
                             showNotification(`Targeting direct request to ${f.name}`, 'info');
                           }}
-                          className="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer"
+                          className="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer flex items-center gap-1"
                         >
-                          ⚡ Request Blood
+                          <PulseIcon className="w-3 h-3" />
+                          <span>Request Blood</span>
                         </button>
                       )}
                       <button
@@ -1036,7 +1062,8 @@ export default function App({ socket }: { socket: Socket }) {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>📞</span> Direct Hospital Confirmation Line
+                <PhoneIcon className="w-5 h-5 text-sky-400" />
+                <span>Direct Hospital Confirmation Line</span>
               </h3>
               <button
                 onClick={() => setShowCallModal({ open: false, facility: null, req: null })}
@@ -1133,7 +1160,10 @@ function RequestCard({
                 <span className="text-slate-400">Destination:</span>
                 {req.providerName ? (
                   <>
-                    <strong className="text-emerald-400 font-bold">🏥 {req.providerName}</strong>
+                    <strong className="text-emerald-400 font-bold inline-flex items-center gap-1.5">
+                      <HospitalIcon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <span>{req.providerName}</span>
+                    </strong>
                     {req.providerCity && req.providerState && (
                       <span className="text-slate-400">({req.providerCity}, {req.providerState})</span>
                     )}
@@ -1154,7 +1184,10 @@ function RequestCard({
                     )}
                   </>
                 ) : (
-                  <span className="text-amber-400 font-medium">⚡ Escalating Tier {req.tier} — searching nearest facilities</span>
+                  <span className="text-amber-400 font-medium inline-flex items-center gap-1.5">
+                    <PulseIcon className="w-4 h-4 text-amber-400 animate-pulse flex-shrink-0" />
+                    <span>Escalating Tier {req.tier} — searching nearest facilities</span>
+                  </span>
                 )}
               </div>
             )}
@@ -1207,7 +1240,8 @@ function RequestCard({
             onClick={() => onCallHospital(req)}
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 cursor-pointer"
           >
-            <span>📞</span> Call Hospital Desk
+            <PhoneIcon className="w-3.5 h-3.5 text-sky-400" />
+            <span>Call Hospital Desk</span>
           </button>
         </div>
 
@@ -1234,7 +1268,8 @@ function RequestCard({
               onClick={() => onAdvanceTransport(req.id, "IN_TRANSIT")}
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
             >
-              <span>🚑</span> Courier / Ambulance Dispatched
+              <TruckIcon className="w-3.5 h-3.5 text-sky-200" />
+              <span>Courier / Ambulance Dispatched</span>
             </button>
           )}
 
@@ -1243,7 +1278,8 @@ function RequestCard({
               onClick={() => onAdvanceTransport(req.id, "FULFILLED")}
               className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
             >
-              <span>✅</span> Confirm Blood Received
+              <CheckCircleIcon className="w-3.5 h-3.5 text-white" />
+              <span>Confirm Blood Received</span>
             </button>
           )}
 
@@ -1479,7 +1515,7 @@ function QuickRequestForm({
       {targetedFac && (
         <div className="bg-red-950/60 border border-red-800 rounded-xl p-3 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-base">🎯</span>
+            <HospitalIcon className="w-4 h-4 text-red-400 flex-shrink-0" />
             <div>
               <span className="font-bold text-white">Direct Targeted Dispatch: </span>
               <span className="text-red-300 font-semibold">{targetedFac.name} ({targetedFac.city}, {targetedFac.state})</span>
@@ -1521,16 +1557,16 @@ function QuickRequestForm({
                 }}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white font-semibold focus:border-red-500 focus:outline-none"
               >
-                <option value="">⚡ Auto-Match Nearest (Geo-Escalation)</option>
+                <option value="">Auto-Match Nearest (Geo-Escalation Engine)</option>
                 {sortedDestinations.map((fac: any) => (
                   <option key={fac.id} value={fac.id}>
-                    {fac.type === 'HOSPITAL' ? '🏥' : '🩸'} {fac.name} {typeof fac.distKm === 'number' && fac.distKm < 9999 ? `(${fac.distKm.toFixed(1)} km · ${fac.city}, ${fac.state})` : `(${fac.city}, ${fac.state})`}
+                    {fac.type === 'HOSPITAL' ? '[Hospital]' : '[Blood Center]'} {fac.name} {typeof fac.distKm === 'number' && fac.distKm < 9999 ? `(${fac.distKm.toFixed(1)} km · ${fac.city}, ${fac.state})` : `(${fac.city}, ${fac.state})`}
                   </option>
                 ))}
               </select>
               <input
                 type="text"
-                placeholder="🔍 Search hospital or state to target..."
+                placeholder="Search hospital or state to target..."
                 value={searchTargetText}
                 onChange={(e) => setSearchTargetText(e.target.value)}
                 className="w-full bg-slate-950/70 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-slate-300 placeholder-slate-500 focus:border-red-500 focus:outline-none"
@@ -1572,9 +1608,9 @@ function QuickRequestForm({
               value={urgency}
               onChange={(e) => setUrgency(e.target.value as any)}
             >
-              <option value="CRITICAL">🚨 CRITICAL (&lt;15 min ETA)</option>
-              <option value="URGENT">⚡ URGENT (&lt;30 min ETA)</option>
-              <option value="STANDARD">🕒 STANDARD (&lt;1 hr ETA)</option>
+              <option value="CRITICAL">CRITICAL (&lt;15 min ETA — Emergency Trauma)</option>
+              <option value="URGENT">URGENT (&lt;30 min ETA — Rapid Surgery)</option>
+              <option value="STANDARD">STANDARD (&lt;1 hr ETA — Scheduled Care)</option>
             </select>
           </div>
         </div>
@@ -1588,8 +1624,12 @@ function QuickRequestForm({
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-base">
-                {(targetedFac.inventory?.find((i) => i.bloodType === bt)?.units ?? 0) >= units ? '✅' : '⚠️'}
+              <span className="flex-shrink-0">
+                {(targetedFac.inventory?.find((i) => i.bloodType === bt)?.units ?? 0) >= units ? (
+                  <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <AlertTriangleIcon className="w-4 h-4 text-amber-400" />
+                )}
               </span>
               <span>
                 <strong>{targetedFac.name}</strong> has{' '}
@@ -1619,9 +1659,10 @@ function QuickRequestForm({
           <div>
             <button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition shadow-lg cursor-pointer flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition shadow-lg cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>🚀</span> {selectedTargetId ? 'Dispatch Direct' : 'Dispatch Auto'}
+              <SendIcon className="w-4 h-4 text-white" />
+              <span>{selectedTargetId ? 'Dispatch Direct' : 'Dispatch Auto-Match'}</span>
             </button>
           </div>
         </div>
