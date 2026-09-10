@@ -1,0 +1,19 @@
+{
+  "name": "bloodbanc",
+  "private": true,
+  "version": "0.1.0",
+  "description": "National hospital-to-hospital blood mutual-aid network",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "db:init": "npm run db:init --workspace=server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
