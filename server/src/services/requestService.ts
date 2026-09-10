@@ -65,6 +65,8 @@ type MatchRow = Record<string, unknown> & {
   id: string; request_id: string; provider_id: string; matched_blood_type: BloodGroup;
   units: number; distance_m: number; score: number; compatibility: string;
   response: string; reason: string | null; responded_at: string | null; created_at: string;
+  provider_name?: string; provider_city?: string; provider_state?: string;
+  provider_phone?: string; provider_address?: string;
 };
 
 function mapMatchRow(m: MatchRow): Match {
@@ -81,6 +83,11 @@ function mapMatchRow(m: MatchRow): Match {
     reason: m.reason ?? undefined,
     respondedAt: m.responded_at ?? undefined,
     createdAt: m.created_at,
+    providerName: (m.provider_name as string) || undefined,
+    providerCity: (m.provider_city as string) || undefined,
+    providerState: (m.provider_state as string) || undefined,
+    providerPhone: (m.provider_phone as string) || undefined,
+    providerAddress: (m.provider_address as string) || undefined,
   };
 }
 
@@ -203,7 +210,26 @@ export async function respondToMatch(input: {
        ORDER BY created_at ASC LIMIT 1`,
       [input.requestId, input.providerId],
     );
-    if (!match.rows[0]) throw new Error('No pending match found for this provider');
+    if (!match.rows[0]) {
+      const reqCheck = await client.query(
+        `SELECT r.status, f.name as provider_name
+         FROM requests r
+         LEFT JOIN matches m ON m.request_id = r.id AND m.response = 'ACCEPT'
+         LEFT JOIN facilities f ON f.id = m.provider_id
+         WHERE r.id = $1`,
+        [input.requestId],
+      );
+      if (
+        reqCheck.rows[0]?.status === 'MATCHED' ||
+        reqCheck.rows[0]?.status === 'IN_TRANSIT' ||
+        reqCheck.rows[0]?.status === 'FULFILLED'
+      ) {
+        throw new Error(
+          `This emergency request has already been fulfilled by ${reqCheck.rows[0]?.provider_name || 'another hospital'}.`,
+        );
+      }
+      throw new Error('No pending match found for this provider');
+    }
 
     const matchId = match.rows[0].id as string;
     await client.query(
@@ -228,11 +254,16 @@ export async function respondToMatch(input: {
       accepted = true;
       status = 'MATCHED';
       await client.query(`UPDATE requests SET status='MATCHED' WHERE id=$1`, [input.requestId]);
-      // Reject other pending offers
+
+      // Fetch name of accepting provider
+      const providerRes = await client.query(`SELECT name FROM facilities WHERE id=$1`, [input.providerId]);
+      const acceptingProviderName = providerRes.rows[0]?.name || 'another hospital';
+
+      // Reject other pending offers and inform them which facility fulfilled it
       await client.query(
-        `UPDATE matches SET response='REJECT', reason='Another provider accepted', responded_at=now()
-         WHERE request_id=$1 AND response='PENDING' AND id<>$2`,
-        [input.requestId, matchId],
+        `UPDATE matches SET response='REJECT', reason=$1, responded_at=now()
+         WHERE request_id=$2 AND response='PENDING' AND id<>$3`,
+        [`Fulfilled by ${acceptingProviderName}`, input.requestId, matchId],
       );
       // Decrement inventory of the accepting provider
       const invRes = await client.query(
@@ -471,15 +502,16 @@ export async function sweepRequests(io?: any): Promise<void> {
     }
   }
 
-  // Escalate tiers where pending matches have been sitting > timeout
+  // Escalate tiers where pending matches have been sitting > timeout without response
   const timeoutSec = Number(process.env.MATCH_RESPONSE_TIMEOUT_SEC || 120);
   const stalled = await query(
-    `SELECT r.id, r.tier FROM requests r
+    `SELECT r.id, r.tier, MAX(m.created_at) AS latest_match_at
+     FROM requests r
      JOIN matches m ON m.request_id = r.id
-     WHERE r.status='OPEN' AND m.response='PENDING'
-       AND m.created_at <= now() - ($1 || ' seconds')::interval
-     GROUP BY r.id, r.tier`,
-    [timeoutSec],
+     WHERE r.status='OPEN' AND m.response='PENDING' AND r.tier < $2
+     GROUP BY r.id, r.tier
+     HAVING MAX(m.created_at) <= now() - ($1 || ' seconds')::interval`,
+    [timeoutSec, TIER_RADII_M.length - 1],
   );
 
   for (const s of stalled.rows) {
@@ -496,33 +528,39 @@ export async function sweepRequests(io?: any): Promise<void> {
       [id, timeoutSec],
     );
 
-    // 2. Mark them as REJECT so they are never re-swept, and log provider accountability event
+    // 2. Log SLA timeout event for each timed-out hospital if not already logged.
+    // CRITICAL: We DO NOT reject their matches! Original hospitals remain eligible to respond and fulfill if they see it late.
     for (const m of timedOut.rows) {
-      await query(
-        `UPDATE matches SET response='REJECT', reason='Response SLA timed out (<15m SLA)', responded_at=now()
-         WHERE id=$1`,
-        [m.id],
+      const alreadyLogged = await query(
+        `SELECT 1 FROM escalation_events
+         WHERE request_id = $1 AND provider_id = $2 AND action = 'NO_RESPONSE'`,
+        [id, m.provider_id],
       );
-      await query(
-        `INSERT INTO escalation_events (request_id, tier, provider_id, action, detail)
-         VALUES ($1, $2, $3, 'NO_RESPONSE', $4)`,
-        [id, Math.min(currentTier, TIER_RADII_M.length - 1), m.provider_id, `Hospital ${m.provider_name} failed to respond within SLA window (<15m)`],
-      );
+      if (alreadyLogged.rows.length === 0) {
+        await query(
+          `INSERT INTO escalation_events (request_id, tier, provider_id, action, detail)
+           VALUES ($1, $2, $3, 'NO_RESPONSE', $4)`,
+          [
+            id,
+            Math.min(currentTier, TIER_RADII_M.length - 1),
+            m.provider_id,
+            `Hospital ${m.provider_name} exceeded initial SLA response window (${timeoutSec}s). Auto-escalating to backup facility while keeping original facility eligible to fulfill.`,
+          ],
+        );
+      }
     }
 
-    // 3. If other matches are still pending/accepted, let them proceed
-    const active = await query(
-      `SELECT id FROM matches WHERE request_id=$1 AND response IN ('PENDING', 'ACCEPT')`,
-      [id],
-    );
-    if (active.rows.length > 0) continue;
-
-    // 4. Try to escalate / reroute to next tier
+    // 3. Try to escalate / reroute to next tier
     const nextTier = Math.min(currentTier + 1, TIER_RADII_M.length - 1);
     const req = await query(`SELECT * FROM requests WHERE id=$1 AND status='OPEN'`, [id]);
     if (!req.rows[0]) continue;
     const rr = mapRequestRow(req.rows[0] as RequestRow);
     const { lat, lng } = await getFacilityLatLng(rr.requesterId);
+
+    const existingProviders = (await query(
+      `SELECT provider_id::text FROM matches WHERE request_id=$1`,
+      [id],
+    )).rows.map((x) => x.provider_id);
 
     let candidates: MatchCandidate[] = [];
     let targetTier = nextTier;
@@ -534,10 +572,7 @@ export async function sweepRequests(io?: any): Promise<void> {
         requestedType: rr.bloodType,
         units: rr.units,
         radiusM: TIER_RADII_M[t]!,
-        excludeFacilityIds: (await query(
-          `SELECT provider_id::text FROM matches WHERE request_id=$1`,
-          [id],
-        )).rows.map((x) => x.provider_id),
+        excludeFacilityIds: existingProviders,
       });
       if (candidates.length > 0) {
         targetTier = t;
@@ -551,19 +586,29 @@ export async function sweepRequests(io?: any): Promise<void> {
       if (io && created.length > 0) {
         getRequestDetail(id).then((detail) => {
           io.to(`facility:${rr.requesterId}`).emit('request:status', detail);
+          // Broadcast updated status to all matches (including original hospital) so they know it escalated
+          for (const m of detail.matches) {
+            io.to(`facility:${m.providerId}`).emit('request:status', detail);
+          }
+          // Broadcast incoming request to new provider
           for (const c of created) {
             io.to(`facility:${c.providerId}`).emit('request:incoming', rr);
-            io.to(`facility:${c.providerId}`).emit('request:status', detail);
           }
         }).catch(() => {});
       }
     } else {
       await query(`UPDATE requests SET tier=$1 WHERE id=$2`, [Math.min(currentTier + 1, TIER_RADII_M.length - 1), id]);
-      await query(
-        `INSERT INTO escalation_events (request_id, tier, provider_id, action, detail)
-         VALUES ($1, $2, NULL, 'ESCALATED', 'All nearby facilities with compatible blood exhausted or timed out')`,
-        [id, Math.min(currentTier + 1, TIER_RADII_M.length - 1)],
+      const alreadyEscalatedAll = await query(
+        `SELECT 1 FROM escalation_events WHERE request_id=$1 AND action='ESCALATED' AND detail LIKE 'All nearby%'`,
+        [id],
       );
+      if (alreadyEscalatedAll.rows.length === 0) {
+        await query(
+          `INSERT INTO escalation_events (request_id, tier, provider_id, action, detail)
+           VALUES ($1, $2, NULL, 'ESCALATED', 'All nearby facilities with compatible blood exhausted or pending response')`,
+          [id, Math.min(currentTier + 1, TIER_RADII_M.length - 1)],
+        );
+      }
     }
   }
 }

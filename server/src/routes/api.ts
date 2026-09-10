@@ -118,6 +118,9 @@ apiRouter.get('/requests', authRequired, async (req: Request, res: Response) => 
             req.address AS "requesterAddress",
             EXISTS(SELECT 1 FROM matches m WHERE m.request_id = r.id AND m.provider_id = $1 AND m.response = 'PENDING') AS "hasPendingMatch",
             (SELECT m.matched_blood_type FROM matches m WHERE m.request_id = r.id AND m.provider_id = $1 LIMIT 1) AS "matchedBloodType",
+            (SELECT m.units FROM matches m WHERE m.request_id = r.id AND m.provider_id = $1 LIMIT 1) AS "matchedUnits",
+            (SELECT m.response FROM matches m WHERE m.request_id = r.id AND m.provider_id = $1 ORDER BY (m.response='PENDING') DESC, m.created_at DESC LIMIT 1) AS "myMatchResponse",
+            (SELECT m.reason FROM matches m WHERE m.request_id = r.id AND m.provider_id = $1 ORDER BY (m.response='ACCEPT') DESC, m.created_at DESC LIMIT 1) AS "myMatchReason",
             (SELECT m.provider_id FROM matches m WHERE m.request_id = r.id ORDER BY (m.response = 'ACCEPT') DESC, (m.response = 'PENDING') DESC, m.score ASC, m.distance_m ASC, m.created_at DESC LIMIT 1) AS "providerId",
             (SELECT prov.name FROM matches m JOIN facilities prov ON prov.id = m.provider_id WHERE m.request_id = r.id ORDER BY (m.response = 'ACCEPT') DESC, (m.response = 'PENDING') DESC, m.score ASC, m.distance_m ASC, m.created_at DESC LIMIT 1) AS "providerName",
             (SELECT prov.city FROM matches m JOIN facilities prov ON prov.id = m.provider_id WHERE m.request_id = r.id ORDER BY (m.response = 'ACCEPT') DESC, (m.response = 'PENDING') DESC, m.score ASC, m.distance_m ASC, m.created_at DESC LIMIT 1) AS "providerCity",
@@ -213,6 +216,9 @@ apiRouter.post('/requests/:id/respond', authRequired, async (req: Request, res: 
     if (io) {
       io.to(`facility:${detail.requesterId}`).emit('request:status', detail);
       io.to(`facility:${user.facilityId}`).emit('request:status', detail);
+      for (const m of detail.matches) {
+        io.to(`facility:${m.providerId}`).emit('request:status', detail);
+      }
       if (result.reroutedProviderId) {
         io.to(`facility:${result.reroutedProviderId}`).emit('request:incoming', detail);
         io.to(`facility:${result.reroutedProviderId}`).emit('request:status', detail);

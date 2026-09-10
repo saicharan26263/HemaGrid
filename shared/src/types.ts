@@ -104,6 +104,11 @@ export interface Match {
   reason?: string;
   respondedAt?: string;
   createdAt: string;
+  providerName?: string;
+  providerCity?: string;
+  providerState?: string;
+  providerPhone?: string;
+  providerAddress?: string;
 }
 
 export interface EscalationEvent {

@@ -108,9 +108,12 @@ export function registerSocketHandlers(io: IOServer): void {
           reason: parsed.data.reason,
         });
         const detail = await getRequestDetail(parsed.data.requestId);
-        // Broadcast updated status to requester and provider
+        // Broadcast updated status to requester, provider, and all candidate providers
         io.to(`facility:${detail.requesterId}`).emit('request:status', detail);
         io.to(`facility:${user.facilityId}`).emit('request:status', detail);
+        for (const m of detail.matches) {
+          io.to(`facility:${m.providerId}`).emit('request:status', detail);
+        }
         if (result.reroutedProviderId) {
           io.to(`facility:${result.reroutedProviderId}`).emit('request:incoming', detail);
           io.to(`facility:${result.reroutedProviderId}`).emit('request:status', detail);
@@ -151,6 +154,9 @@ export function registerSocketHandlers(io: IOServer): void {
         const detail = await getRequestDetail(parsed.data.requestId);
         io.to(`facility:${detail.requesterId}`).emit('request:status', detail);
         io.to(`facility:${user.facilityId}`).emit('request:status', detail);
+        for (const m of detail.matches) {
+          io.to(`facility:${m.providerId}`).emit('request:status', detail);
+        }
       } catch (err) {
         socket.emit('error:general', (err as Error).message);
       }

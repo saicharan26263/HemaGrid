@@ -54,6 +54,8 @@ interface RequestWithMeta extends BloodRequest {
   distanceM?: number;
   providerMatchStatus?: string;
   hasPendingMatch?: boolean;
+  myMatchResponse?: string;
+  myMatchReason?: string;
   matchedBloodType?: BloodGroup;
   matchedUnits?: number;
   matches?: any[];
@@ -224,6 +226,18 @@ export default function App({ socket }: { socket: Socket }) {
         }
         return [req, ...prev];
       });
+      if (
+        user &&
+        req.providerId &&
+        req.providerId !== user.facilityId &&
+        req.requesterId !== user.facilityId &&
+        req.status === 'MATCHED'
+      ) {
+        showNotification(
+          `Update: Emergency request for ${req.units}u ${req.bloodType} was accepted & fulfilled by ${req.providerName || 'another hospital'}.`,
+          'info',
+        );
+      }
       loadData(token);
     });
 
@@ -1129,7 +1143,11 @@ function RequestCard({
   onCallHospital: (req: RequestWithMeta) => void;
 }) {
   const isRequester = req.requesterId === currentFacilityId;
-  const isPendingProvider = !isRequester && req.status === "OPEN" && req.hasPendingMatch !== false;
+  const myMatch = req.matches?.find((m: any) => m.providerId === currentFacilityId);
+  const myMatchPending = myMatch ? myMatch.response === 'PENDING' : (req.hasPendingMatch !== false && req.myMatchResponse !== 'REJECT');
+  const isPendingProvider = !isRequester && req.status === "OPEN" && myMatchPending;
+  const isConfirmedProvider = !isRequester && req.providerId === currentFacilityId && (req.status === 'MATCHED' || req.status === 'IN_TRANSIT' || req.status === 'FULFILLED');
+  const isFulfilledByOther = !isRequester && req.providerId && req.providerId !== currentFacilityId && (req.status === 'MATCHED' || req.status === 'IN_TRANSIT' || req.status === 'FULFILLED');
 
   const deadline = new Date(req.deadlineAt).getTime();
   const now = Date.now();
@@ -1206,7 +1224,9 @@ function RequestCard({
           <div className="text-right">
             <div
               className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                req.status === 'CANCELLED'
+                isFulfilledByOther
+                  ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
+                  : req.status === 'CANCELLED'
                   ? 'bg-slate-800 text-slate-400 border border-slate-700'
                   : req.status === 'MATCHED'
                   ? 'bg-blue-950 text-blue-300 border border-blue-800'
@@ -1217,7 +1237,7 @@ function RequestCard({
                   : 'bg-red-950 text-red-300 border border-red-800 animate-pulse'
               }`}
             >
-              {req.status}
+              {isFulfilledByOther ? `Fulfilled by ${req.providerName || 'Partner'}` : req.status}
             </div>
             {req.status !== 'CANCELLED' && req.status !== 'FULFILLED' && (
               <div className="text-[11px] text-slate-400 mt-1 font-mono">
@@ -1232,6 +1252,37 @@ function RequestCard({
         <p className="text-xs text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800 mb-3">
           <span className="text-slate-500 font-semibold">Clinical Notes:</span> {req.notes}
         </p>
+      )}
+
+      {isFulfilledByOther && (
+        <div className="text-xs bg-slate-950/80 border border-emerald-800/60 rounded-xl p-3 text-slate-300 flex items-start gap-2.5 mb-3">
+          <CheckCircleIcon className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-bold text-emerald-300">
+              Blood Fulfilled by Another Network Hospital
+            </div>
+            <p className="text-slate-400 mt-0.5">
+              <strong className="text-white">{req.providerName || "Another network hospital"}</strong>
+              {req.providerCity && req.providerState && ` (${req.providerCity}, ${req.providerState})`} responded faster and fulfilled this emergency request. No blood units have been deducted from your vault.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isConfirmedProvider && (
+        <div className="text-xs bg-emerald-950/40 border border-emerald-800/60 rounded-xl p-2.5 text-emerald-200 flex items-center gap-2 mb-3">
+          <CheckCircleIcon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span>Your facility is the confirmed provider. Please prepare units for immediate cold-chain courier dispatch.</span>
+        </div>
+      )}
+
+      {isPendingProvider && req.tier > 0 && (
+        <div className="text-xs bg-amber-950/40 border border-amber-800/60 rounded-xl p-2.5 text-amber-200 flex items-start gap-2 mb-3">
+          <AlertTriangleIcon className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold">Tier {req.tier} Failover Active:</span> Secondary mutual-aid hospitals have also been alerted under SLA failover. Your facility is still eligible to accept and dispatch units to fulfill this request.
+          </div>
+        </div>
       )}
 
       <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
@@ -1263,7 +1314,7 @@ function RequestCard({
             </>
           )}
 
-          {req.status === "MATCHED" && (
+          {(isConfirmedProvider || isRequester) && req.status === "MATCHED" && (
             <button
               onClick={() => onAdvanceTransport(req.id, "IN_TRANSIT")}
               className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
@@ -1273,7 +1324,7 @@ function RequestCard({
             </button>
           )}
 
-          {req.status === "IN_TRANSIT" && (
+          {(isConfirmedProvider || isRequester) && req.status === "IN_TRANSIT" && (
             <button
               onClick={() => onAdvanceTransport(req.id, "FULFILLED")}
               className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 cursor-pointer"
